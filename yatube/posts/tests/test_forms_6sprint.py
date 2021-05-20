@@ -157,5 +157,5 @@ class AddCommentFormTest(TestCase):
                                                        'post_id':
                                                        self.post.id}))
         self.assertEqual(Comment.objects.count(), self.comments_count + 1)
-        self.assertTrue(Comment.objects.filter(text=
-                                              'Тестовый комментарий').exists())
+        self.assertTrue(Comment.objects.filter
+                       (text='Тестовый комментарий').exists())
