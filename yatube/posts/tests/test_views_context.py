@@ -1,5 +1,10 @@
+import shutil
+import tempfile
+
+from django.conf import settings
 from django import forms
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, Client
 from django.urls import reverse
 
@@ -17,6 +22,21 @@ class ContextPageViewTests(TestCase):
     def setUpClass(cls):
         super().setUpClass()
 
+        settings.MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
+
+        cls.small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x01\x00'
+            b'\x01\x00\x00\x00\x00\x21\xf9\x04'
+            b'\x01\x0a\x00\x01\x00\x2c\x00\x00'
+            b'\x00\x00\x01\x00\x01\x00\x00\x02'
+            b'\x02\x4c\x01\x00\x3b'
+        )
+        cls.uploaded = SimpleUploadedFile(
+            name='small.gif',
+            content=cls.small_gif,
+            content_type='image/gif'
+        )
+
         cls.user = get_user_model().objects.create(
             username=cls.AUTH_USER)
 
@@ -28,7 +48,15 @@ class ContextPageViewTests(TestCase):
         cls.post = Post.objects.create(text=cls.POST_TEXT,
                                        author=cls.user,
                                        group=cls.group,
+                                       image=cls.uploaded
                                        )
+
+        cls.uploaded_name = f'posts/{cls.uploaded.name}'
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
         self.guest_client = Client()
@@ -42,12 +70,14 @@ class ContextPageViewTests(TestCase):
         form_fields = {
             'group': forms.fields.ChoiceField,
             'text': forms.fields.CharField,
+            'image': forms.fields.ImageField,
         }
 
         for value, expected in form_fields.items():
             with self.subTest(value=value):
                 form_field = response.context.get('form').fields.get(value)
-                self.assertIsInstance(form_field, expected)
+                self.assertIsInstance(form_field, expected,
+                                      'Ошибка в форме')
 
     def test_index_context_page(self):
         """Тестирование содержания context в index."""
@@ -56,7 +86,8 @@ class ContextPageViewTests(TestCase):
         context_index = {
             self.POST_TEXT: response.context['page'][0].text,
             self.AUTH_USER: response.context['page'][0].author.username,
-            self.GROUP_TITLE: response.context['page'][0].group.title
+            self.GROUP_TITLE: response.context['page'][0].group.title,
+            self.uploaded_name: response.context['page'][0].image,
         }
 
         for expected, value in context_index.items():
@@ -75,6 +106,7 @@ class ContextPageViewTests(TestCase):
             self.GROUP_TITLE: response.context['page'][0].group.title,
             self.GROUP_SLUG: response.context['page'][0].group.slug,
             self.GROUP_DSCRPTN: response.context['page'][0].group.description,
+            self.uploaded_name: response.context['page'][0].image,
         }
 
         for expected, value in context_group.items():
@@ -111,6 +143,7 @@ class ContextPageViewTests(TestCase):
             self.POST_TEXT: response.context['page'][0].text,
             self.GROUP_TITLE: response.context['page'][0].group.title,
             self.AUTH_USER: response.context['page'][0].author.username,
+            self.uploaded_name: response.context['page'][0].image,
         }
 
         for expected, value in context_profile.items():
@@ -129,6 +162,7 @@ class ContextPageViewTests(TestCase):
             self.POST_TEXT: response.context.get('post').text,
             self.GROUP_TITLE: response.context.get('post').group.title,
             self.AUTH_USER: response.context.get('post').author.username,
+            self.uploaded_name: response.context.get('post').image,
         }
 
         for expected, value in context_post.items():

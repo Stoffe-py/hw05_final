@@ -75,7 +75,8 @@ def post_edit(request, username, post_id):
                                                 "post_id": post_id
                                                 }))
 
-    form = PostForm(request.POST or None, files=request.FILES or None, instance=post)
+    form = PostForm(request.POST or None, files=request.FILES or None,
+                    instance=post)
     if form.is_valid():
         post = form.save(commit=False)
         post.save()
@@ -113,8 +114,6 @@ def profile_follow(request, username):
     if request.user != author:
         Follow.objects.get_or_create(user=request.user, author=author)
     return redirect('profile', username=username)
-    
-
 
 
 @login_required
