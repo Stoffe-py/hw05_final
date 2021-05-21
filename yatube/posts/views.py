@@ -2,11 +2,12 @@ from django.shortcuts import render
 from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model
+from django.urls import reverse
+
 from .models import Post, Group, Follow
 from .forms import PostForm, CommentForm
 from django.core.paginator import Paginator
-from django.contrib.auth import get_user_model
-from django.urls import reverse
 
 
 User = get_user_model()
@@ -20,7 +21,7 @@ def post_paginator(request, post_list):
 
 
 def index(request):
-    post_list = Post.objects.select_related('group').order_by('-pub_date')
+    post_list = Post.objects.select_related('group')
     paginator = Paginator(post_list, 10)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)

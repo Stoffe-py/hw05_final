@@ -30,7 +30,7 @@ class Post(models.Model):
     image = models.ImageField(upload_to='posts/', blank=True, null=True)
 
     class Meta():
-        ordering = ['-pub_date']
+        ordering = ('-pub_date',)
 
     def __str__(self):
         return self.text[:15]
@@ -47,6 +47,9 @@ class Comment(models.Model):
                             help_text='Введите текст коммента')
     created = models.DateTimeField(verbose_name='Дата публикации коммента',
                                    auto_now_add=True)
+
+    class Meta:
+        ordering = ('-created',)
 
     def __str__(self):
         return self.text
